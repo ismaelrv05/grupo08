@@ -68,27 +68,26 @@ void SpecificWorker::initialize(int period)
 	}
 	else
 	{
-		timer.start(Period);
+        viewer = new AbstractGraphicViewer(this, QRectF(-5000, -5000, 10000, 10000));
+        viewer->add_robot(460, 480, 0, 100, QColor("BLue"));
+        viewer->show();
+
+
+        timer.start(Period);
 	}
 
 }
 
 void SpecificWorker::compute()
 {
-	//computeCODE
-	//QMutexLocker locker(mutex);
-	//try
-	//{
-	//  camera_proxy->getYImage(0,img, cState, bState);
-	//  memcpy(image_gray.data, &img[0], m_width*m_height*sizeof(uchar));
-	//  searchTags(image_gray);
-	//}
-	//catch(const Ice::Exception &e)
-	//{
-	//  std::cout << "Error reading from Camera" << e << std::endl;
-	//}
-	
-	
+    try
+    {
+        auto ldata = lidar3d_proxy->getLidarData("pearl", 0, 360, 4);
+        qInfo() << ldata.points.size();
+
+       draw_lidar(ldata.points, viewer);
+    }
+    catch(const Ice::Exception &e){ std::cout << e.what() << std::endl;}
 }
 
 int SpecificWorker::startup_check()
@@ -96,6 +95,24 @@ int SpecificWorker::startup_check()
 	std::cout << "Startup check" << std::endl;
 	QTimer::singleShot(200, qApp, SLOT(quit()));
 	return 0;
+}
+
+void SpecificWorker::draw_lidar(const RoboCompLidar3D::TPoints &points, AbstractGraphicViewer *pViewer)
+{
+    static std::vector<QGraphicsItem*> borrar;
+    for(auto &p: borrar)
+    {
+        viewer->scene.removeItem(p);
+        delete p;
+    }
+    borrar.clear();
+
+    for(const auto &p: points)
+    {
+        auto r =  pViewer->scene.addRect(-25, -25, 50, 50, QPen(QColor("green")), QBrush(QColor("green")));
+        r->setPos(p.x*1000, p.y*1000);
+        borrar.push_back(r);
+    }
 }
 
 

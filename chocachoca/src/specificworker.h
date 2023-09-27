@@ -28,7 +28,7 @@
 #define SPECIFICWORKER_H
 
 #include <genericworker.h>
-#include <innermodel/innermodel.h>
+#include <abstract_graphic_viewer/abstract_graphic_viewer.h>
 
 class SpecificWorker : public GenericWorker
 {
@@ -45,9 +45,10 @@ public slots:
 	int startup_check();
 	void initialize(int period);
 private:
-	std::shared_ptr < InnerModel > innerModel;
 	bool startup_check_flag;
+    AbstractGraphicViewer *viewer;
 
+    void draw_lidar(const RoboCompLidar3D::TPoints &points, AbstractGraphicViewer *pViewer);
 };
 
 #endif
