@@ -71,6 +71,7 @@ void SpecificWorker::initialize(int period)
         viewer = new AbstractGraphicViewer(this, QRectF(-5000, -5000, 10000, 10000));
         viewer->add_robot(460, 480, 0, 100, QColor("BLue"));
         viewer->show();
+        viewer->activateWindow();
 
 
         timer.start(Period);
@@ -82,10 +83,21 @@ void SpecificWorker::compute()
 {
     try
     {
-        auto ldata = lidar3d_proxy->getLidarData("pearl", 0, 360, 4);
+        auto ldata = lidar3d_proxy->getLidarData("bpearl", 0, 360, 4);
         qInfo() << ldata.points.size();
+        const auto &points =ldata.points;
+        //if(points.empty()) return;
 
-       draw_lidar(ldata.points, viewer);
+        //decltype(ldata.points) filtered_points;
+        RoboCompLidar3D::TPoints filtered_points;
+        std::ranges::copy_if(ldata.points, std::back_inserter(filtered_points), [](auto &p) {return p.z < 2000;});
+        draw_lidar(filtered_points, viewer);
+
+        //CONTROL
+
+
+        int offset = points.size()/2-points.size()/5;
+        auto min_elem = std::min(points.begin()+offset, points.end()- offset, [](auto a, auto b) {return std::hypot(a->x, a->y, a->z)< std::hypot(b->x, b->y, b->z);});
     }
     catch(const Ice::Exception &e){ std::cout << e.what() << std::endl;}
 }
@@ -110,7 +122,7 @@ void SpecificWorker::draw_lidar(const RoboCompLidar3D::TPoints &points, Abstract
     for(const auto &p: points)
     {
         auto r =  pViewer->scene.addRect(-25, -25, 50, 50, QPen(QColor("green")), QBrush(QColor("green")));
-        r->setPos(p.x*1000, p.y*1000);
+        r->setPos(p.x, p.y);
         borrar.push_back(r);
     }
 }
