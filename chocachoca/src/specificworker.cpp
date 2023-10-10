@@ -94,12 +94,39 @@ void SpecificWorker::compute()
         draw_lidar(filtered_points, viewer);
 
         //CONTROL
+        //get minimum distance point
+        int offset = filtered_points.size()/2-filtered_points.size()/3;
+        auto min_elem = std::min_element(points.begin()+offset, points.end()- offset, [](auto a, auto b) {return std::hypot(a.x, a.y)< std::hypot(b.x, b.y);});
 
+        const float MIN_DISTANCE = 1000;
+        qInfo()<<std::hypot(min_elem->x, min_elem->y);
+        if (std::hypot(min_elem->x, min_elem->y)<MIN_DISTANCE)
+        {
 
-        int offset = points.size()/2-points.size()/5;
-        auto min_elem = std::min(points.begin()+offset, points.end()- offset, [](auto a, auto b) {return std::hypot(a->x, a->y, a->z)< std::hypot(b->x, b->y, b->z);});
+            //STOP THE ROBOT & START RUNNING
+            try
+            {
+                omnirobot_proxy->setSpeedBase(0, 0, 0.5);
+            }
+            catch (const Ice::Exception &e)
+            {
+                std::cout << "Error reading from camera" << e << std::endl;
+            }
+        }
+        else
+        {
+            //start the robot
+            try
+            {
+                omnirobot_proxy->setSpeedBase(1000/1000.f,0,0);
+            }
+            catch(const Ice::Exception &e)
+            {
+                std::cout<<"Error reading from camera"<<e<<std::endl;
+            }
+        }
     }
-    catch(const Ice::Exception &e){ std::cout << e.what() << std::endl;}
+    catch(const Ice::Exception &e){ std::cout << "Error reading from camera"<<e<< std::endl;}
 }
 
 int SpecificWorker::startup_check()
