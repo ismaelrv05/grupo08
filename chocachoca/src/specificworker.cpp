@@ -49,12 +49,6 @@ bool SpecificWorker::setParams(RoboCompCommonBehavior::ParameterList params)
 //		innerModel = std::make_shared(innermodel_path);
 //	}
 //	catch(const std::exception &e) { qFatal("Error reading config params"); }
-
-
-
-
-
-
 	return true;
 }
 
@@ -69,13 +63,23 @@ void SpecificWorker::initialize(int period)
 	else
 	{
         viewer = new AbstractGraphicViewer(this, QRectF(-5000, -5000, 10000, 10000));
-        viewer->add_robot(460, 480, 0, 100, QColor("BLue"));
+        viewer->add_robot(460, 480, 0, 100, QColor("Blue"));
         viewer->show();
         viewer->activateWindow();
-
-
         timer.start(Period);
 	}
+
+}
+
+void SpecificWorker::follow_wall(RoboCompLidar3D::TData w, float &ad, float &ret){
+
+    ad = 1500;
+
+    if (w.points.size() < keep_dist){
+        ad=1200;
+        ret = -0.1 * keep_dist /w.points.size();
+    }
+
 
 }
 
@@ -127,6 +131,25 @@ void SpecificWorker::compute()
         }
     }
     catch(const Ice::Exception &e){ std::cout << "Error reading from camera"<<e<< std::endl;}
+
+    switch (state)
+    {
+        case 0:
+            // STRAIGHT_LINE
+            adv = 1000;
+            ret = 0;
+            stuck = 0;
+            break;
+        case 1:
+            // FOLLOW_WALL
+            stuck = 0;
+            follow_walls(right, adv, ret);
+            break;
+
+        case 2:
+            // SPIRAL
+            break;
+    }
 }
 
 int SpecificWorker::startup_check()
@@ -166,3 +189,6 @@ void SpecificWorker::draw_lidar(const RoboCompLidar3D::TPoints &points, Abstract
 // RoboCompLidar3D::TPoint
 // RoboCompLidar3D::TData
 
+/*
+ *
+ */
