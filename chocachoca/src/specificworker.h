@@ -45,17 +45,16 @@ public slots:
 	void compute();
 	int startup_check();
 	void initialize(int period);
-    void follow_wall(RoboCompLidar3D::TData w, float &adv, float &ret);
+    void idle(RoboCompLidar3D::TData &ldata);
+    void follow_wall(RoboCompLidar3D::TData &ldata);
 private:
 	bool startup_check_flag;
     AbstractGraphicViewer *viewer;
-    int keep_dist= 600;
-    int min_dist = 1000;
-    int numWalls = 0;
-    int state = 0;
-
-
     void draw_lidar(const RoboCompLidar3D::TPoints &points, AbstractGraphicViewer *pViewer);
+
+    //States
+    enum class State {IDLE, FOLLOW_WALL, STRAIGHT_LINE, SPIRAL};
+    State state = State::IDLE;
 };
 
 #endif

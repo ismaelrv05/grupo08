@@ -71,18 +71,6 @@ void SpecificWorker::initialize(int period)
 
 }
 
-void SpecificWorker::follow_wall(RoboCompLidar3D::TData w, float &ad, float &ret){
-
-    ad = 1500;
-
-    if (w.points.size() < keep_dist){
-        ad=1200;
-        ret = -0.1 * keep_dist /w.points.size();
-    }
-
-
-}
-
 void SpecificWorker::compute()
 {
     try
@@ -132,24 +120,39 @@ void SpecificWorker::compute()
     }
     catch(const Ice::Exception &e){ std::cout << "Error reading from camera"<<e<< std::endl;}
 
+    std::tuple<float, float>tuple1;
     switch (state)
     {
-        case 0:
-            // STRAIGHT_LINE
-            adv = 1000;
-            ret = 0;
-            stuck = 0;
-            break;
-        case 1:
-            // FOLLOW_WALL
-            stuck = 0;
-            follow_walls(right, adv, ret);
+        case State::IDLE:
+           // tuple1=chocachoca(ldata);
+
             break;
 
-        case 2:
+        case State::FOLLOW_WALL:
+            // FOLLOW_WALL
+            break;
+
+        case State::STRAIGHT_LINE:
+           // tuple1=chocachoca(ldata);
+            // STRAIGHT_LINE
+            break;
+
+        case State::SPIRAL:
             // SPIRAL
             break;
     }
+}
+
+void SpecificWorker::idle(RoboCompLidar3D::TData &ldata){
+}
+void SpecificWorker::chocachoca(RoboCompLidar3D::TData &ldata){
+
+}
+
+void SpecificWorker::follow_wall(RoboCompLidar3D::TData &ldata){
+
+    std::ranges::sort(ldata, {}, &RoboCompLidar3D::TData::);
+
 }
 
 int SpecificWorker::startup_check()
