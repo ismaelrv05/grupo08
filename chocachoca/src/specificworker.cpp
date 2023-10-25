@@ -76,7 +76,7 @@ void SpecificWorker::compute()
 {
     RoboCompLidar3D::TData ldata;
     try
-    {   auto ldata = lidar3d_proxy->getLidarData("bpearl", 0, 360, 4);
+    {   auto ldata = lidar3d_proxy->getLidarData("bpearl", 0, 2 * M_PI, 1);
         qInfo() << ldata.points.size();
         const auto &points =ldata.points;
 
@@ -84,39 +84,39 @@ void SpecificWorker::compute()
         std::ranges::copy_if(ldata.points, std::back_inserter(filtered_points), [](auto &p) {return p.z < 2000;});
         draw_lidar(filtered_points, viewer);
 
-        int offset = filtered_points.size()/2-filtered_points.size()/3;
-        auto min_elem = std::min_element(points.begin()+offset, points.end()- offset, [](auto a, auto b) {return std::hypot(a.x, a.y)< std::hypot(b.x, b.y);});
+        State state = std::get<0>(tuple);
+        std::cout << "STATE: " << static_cast<std::underlying_type<State>::type>(state) << std::endl;
 
+        // State Machine
+        switch (state)
+        {
+            default:
+                std:: cout << "IDLE" << std::endl;
+                tuple = idle(filtered_points);
+                break;
+            case State::STRAIGHT_LINE:
+                std::cout << "STRAIGHT_LINE" << std::endl;
+                tuple = straight_line(filtered_points);
+                break;
+            case State::TURN:
+                std::cout << "TURN" << std::endl;
+                tuple = turn(filtered_points);
+                break;
+            case State::FOLLOW_WALL:
+                std::cout << "FOLLOW_WALL" << std::endl;
+                tuple = follow_wall(filtered_points);
+                break;
+            case State::SPIRAL:
+                std::cout << "SPIRAL" << std::endl;
+                // tuple = spiral(ldata);
+                break;
+        }
+
+        // int offset = filtered_points.size()/2-filtered_points.size()/3;
+        //auto min_elem = std::min_element(points.begin()+offset, points.end()- offset, [](auto a, auto b) {return std::hypot(a.x, a.y)< std::hypot(b.x, b.y);});
     }
     catch (const Ice::Exception & e) { std::cout<<e.what() << std::endl; return;};
 
-    State state = std::get<0>(tuple);
-    std::cout << "STATE: " << static_cast<std::underlying_type<State>::type>(state) << std::endl;
-
-    // State Machine
-    switch (state)
-    {
-        default:
-            std:: cout << "IDLE" << std::endl;
-            tuple = idle(ldata);
-            break;
-        case State::STRAIGHT_LINE:
-            std::cout << "STRAIGHT_LINE" << std::endl;
-            tuple = straight_line(ldata);
-            break;
-        case State::TURN:
-            std::cout << "TURN" << std::endl;
-            tuple = turn(ldata);
-            break;
-        case State::FOLLOW_WALL:
-            std::cout << "FOLLOW_WALL" << std::endl;
-            tuple = follow_wall(ldata);
-            break;
-        case State::SPIRAL:
-            std::cout << "SPIRAL" << std::endl;
-           // tuple = spiral(ldata);
-            break;
-    }
     //start the robot
     auto &[_, adv, rot] = tuple;
     try
@@ -125,50 +125,60 @@ void SpecificWorker::compute()
 }
 
 
-std::tuple<SpecificWorker::State,float,float> SpecificWorker::idle(const RoboCompLidar3D::TData &ldata){
+std::tuple<SpecificWorker::State,float,float> SpecificWorker::idle(const RoboCompLidar3D::TPoints &filtered_points){
     auto tuple = std::make_tuple(State::STRAIGHT_LINE, MAX_SPEED, 0);
     return tuple;
 }
 
 
-std::tuple<SpecificWorker::State, float,float> SpecificWorker::straight_line(const RoboCompLidar3D::TData &ldata){
+std::tuple<SpecificWorker::State, float,float> SpecificWorker::straight_line(const RoboCompLidar3D::TPoints &filtered_points){
+
+    int offset = filtered_points.size() / 3;
+    auto min_elem = std::min_element(filtered_points.begin() + offset, (filtered_points.end() - offset)-1,
+                                     [](auto a, auto b) { return std::hypot(a.x, a.y) < std::hypot(b.x, b.y);});
     float adv = 0.0;
     float rot = 0.0;
-    RoboCompLidar3D::TData avanza;
-    avanza.points.assign(ldata.points.begin() + ldata.points.size() / 3, ldata.points.end() - ldata.points.size() / 3);
-    std::cout<<"Distancia: "<<avanza.points.front().distance2d<<std::endl;
+
+    std::cout<<"Distancia: "<<std::hypot(min_elem->x, min_elem->y)<<std::endl;
     State state = State::STRAIGHT_LINE;
 
     //Si llega a la pared gira
-    if((avanza.points.front().distance2d < DIST_COL))
+    if((std::hypot(min_elem->x, min_elem->y)< DIST_COL))
     {
         state = State::TURN;
         adv = 100.0;
-        RoboCompLidar3D::TData lateralder;
-        lateralder.points.assign(ldata.points.end() - ldata.points.size()/3, ldata.points.end() - 150);
-        RoboCompLidar3D::TData lateralizq;
-        lateralizq.points.assign(ldata.points.begin() + 150, (ldata.points.begin() + ldata.points.size()/3)-1);
-        std::ranges::sort(lateralder.points, {}, &RoboCompLidar3D::TPoint::distance2d);
-        std::ranges::sort(lateralizq.points, {}, &RoboCompLidar3D::TPoint::distance2d);
-        if (lateralder.points.front().distance2d > lateralizq.points.front().distance2d)
+
+        int offsetDer = filtered_points.size()/3;
+        auto min_elemDer = std::min_element(filtered_points.end() - offsetDer, filtered_points.end() - 150,
+                                         [](auto a, auto b) { return std::hypot(a.x, a.y) < std::hypot(b.x, b.y);});
+
+        int offsetIzq = filtered_points.size()/3;
+        auto min_elemIzq = std::min_element(filtered_points.begin() +150, (filtered_points.begin()+ offsetIzq) - 1,
+                                            [](auto a, auto b) { return std::hypot(a.x, a.y) < std::hypot(b.x, b.y);});
+        if(std::hypot(min_elemDer->x, min_elem->y)>std::hypot(min_elemIzq->x, min_elem->y))
             rot = -1.0;
         else
             rot = 1.0;
-        auto tuple= std::make_tuple(State::STRAIGHT_LINE, adv, rot);
-        return tuple;
+
+        return std::make_tuple(state, adv, rot);
     }
+    state=State::STRAIGHT_LINE;
+    adv=MAX_SPEED;
+    rot=0.0;
+
+    return std::make_tuple(state,adv,rot);
 }
 
 
-std::tuple<SpecificWorker::State, float,float> SpecificWorker::turn(const RoboCompLidar3D::TData &ldata)
+std::tuple<SpecificWorker::State, float,float> SpecificWorker::turn(const RoboCompLidar3D::TPoints &filtered_points)
 {
-    RoboCompLidar3D::TData avanza;
-    avanza.points.assign(ldata.points.begin() + ldata.points.size()/3, (ldata.points.end() - ldata.points.size()/3)-1);
-    std::ranges::sort(avanza.points, {}, &RoboCompLidar3D::TPoint::distance2d);
-    std::cout<<"Distance: "<<avanza.points.front().distance2d<<std::endl;
+    int offset = filtered_points.size() / 2 - filtered_points.size() / 5;
+    auto min_elem = std::min_element(filtered_points.begin() + offset, filtered_points.end() - offset,
+                                     [](auto a, auto b) { return std::hypot(a.x, a.y) < std::hypot(b.x, b.y);});
+    std::cout<<"Distance: "<<std::hypot(min_elem->x, min_elem->y)<<std::endl;
     State state = State::TURN;
 
-    if((avanza.points.front().distance2d > DIST_COL))
+    if((std::hypot(min_elem->x, min_elem->y) > DIST_COL))
     {
         int choice;
         std::srand(time(0));
@@ -197,28 +207,20 @@ std::tuple<SpecificWorker::State, float,float> SpecificWorker::turn(const RoboCo
     }
 }
 
-std::tuple<SpecificWorker::State, float, float> SpecificWorker::follow_wall(const RoboCompLidar3D::TData &ldata){
+std::tuple<SpecificWorker::State, float, float> SpecificWorker::follow_wall(const RoboCompLidar3D::TPoints &filtered_points){
 
-    RoboCompLidar3D::TData avanza;
-    avanza.points.assign(ldata.points.begin() + ldata.points.size()/3, (ldata.points.end() - ldata.points.size()/3)-1);
+    int offset = filtered_points.size() / 2 - filtered_points.size() / 5;
+    auto min_elem = std::min_element(filtered_points.begin() + offset, filtered_points.end() - offset,
+                                     [](auto a, auto b) { return std::hypot(a.x, a.y) < std::hypot(b.x, b.y);});
 
-    RoboCompLidar3D::TData lateralder;
-    lateralder.points.assign(ldata.points.end() - ldata.points.size()/3, ldata.points.end() - 150);
-    RoboCompLidar3D::TData lateralizq;
-    lateralizq.points.assign(ldata.points.begin() + 150, (ldata.points.begin() + ldata.points.size()/3)-1);
-
-    std::ranges::sort(avanza.points, {}, &RoboCompLidar3D::TPoint::distance2d);
-    std::ranges::sort(lateralder.points, {}, &RoboCompLidar3D::TPoint::distance2d);
-    std::ranges::sort(lateralizq.points, {}, &RoboCompLidar3D::TPoint::distance2d);
-
-    std::cout<<"Distance: "<<avanza.points.front().distance2d<<std::endl;
+    std::cout<<"Distance: "<<std::hypot(min_elem->x, min_elem->y)<<std::endl;
 
     float adv = 0.0;
     float rot = 0.0;
     State state = State::FOLLOW_WALL;
 
 
-    if((lateralder.points.front().distance2d < DIST_PARED - DELTA))
+    if((std::hypot(min_elem->x, min_elem->y) < DIST_PARED - DELTA))
     {
         state = State::FOLLOW_WALL;
         adv = MAX_SPEED;
@@ -227,20 +229,16 @@ std::tuple<SpecificWorker::State, float, float> SpecificWorker::follow_wall(cons
         return tuple;
     }
 
-    if((avanza.points.front().distance2d < DIST_COL))
+    if((std::hypot(min_elem->x, min_elem->y) < DIST_COL))
     {
         state = State::TURN;
         adv = 100.0;
-
-        if (lateralder.points.front().distance2d > lateralizq.points.front().distance2d)
-            rot = -1.0;
-        else
-            rot = 1.0;
+        rot = 1.0;
         auto tuple = std::make_tuple(state, adv, rot);
         return tuple;
     }
 
-    else if(lateralder.points.front().distance2d >= DIST_PARED + DELTA)
+    else if(std::hypot(min_elem->x, min_elem->y) >= DIST_PARED + DELTA)
     {
         state = State::FOLLOW_WALL;
         adv = MAX_SPEED;

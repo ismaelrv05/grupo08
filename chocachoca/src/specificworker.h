@@ -59,10 +59,10 @@ private:
 
     std::tuple<State, float, float> tuple;
 
-    std::tuple<SpecificWorker::State, float, float> idle(const RoboCompLidar3D::TData &ldata);
-    std::tuple<SpecificWorker::State, float,float> straight_line(const RoboCompLidar3D::TData &ldata);
-    std::tuple<SpecificWorker::State, float,float> turn(const RoboCompLidar3D::TData &ldata);
-    std::tuple<SpecificWorker::State, float, float> follow_wall(const RoboCompLidar3D::TData &ldata);
+    std::tuple<SpecificWorker::State, float, float> idle(const RoboCompLidar3D::TPoints &filtered_points);
+    std::tuple<SpecificWorker::State, float,float> straight_line(const RoboCompLidar3D::TPoints &filtered_points);
+    std::tuple<SpecificWorker::State, float,float> turn(const RoboCompLidar3D::TPoints &filtered_points);
+    std::tuple<SpecificWorker::State, float, float> follow_wall(const RoboCompLidar3D::TPoints &filtered_points);
 
 };
 
