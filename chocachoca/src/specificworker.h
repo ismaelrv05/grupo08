@@ -38,23 +38,32 @@ public:
 	SpecificWorker(TuplePrx tprx, bool startup_check);
 	~SpecificWorker();
 	bool setParams(RoboCompCommonBehavior::ParameterList params);
-
-
+    const float MAX_SPEED = 1200.0;
+    const float DIST_COL = 1050.0;
+    const int DIST_PARED = 1000;
+    const int DELTA = 50;
 
 public slots:
 	void compute();
 	int startup_check();
 	void initialize(int period);
-    void idle(RoboCompLidar3D::TData &ldata);
-    void follow_wall(RoboCompLidar3D::TData &ldata);
+    
 private:
 	bool startup_check_flag;
     AbstractGraphicViewer *viewer;
     void draw_lidar(const RoboCompLidar3D::TPoints &points, AbstractGraphicViewer *pViewer);
 
-    //States
-    enum class State {IDLE, FOLLOW_WALL, STRAIGHT_LINE, SPIRAL};
+    //State
+    enum class State {IDLE, FOLLOW_WALL, STRAIGHT_LINE, SPIRAL, TURN};
     State state = State::IDLE;
+
+    std::tuple<State, float, float> tuple;
+
+    std::tuple<SpecificWorker::State, float, float> idle(const RoboCompLidar3D::TData &ldata);
+    std::tuple<SpecificWorker::State, float,float> straight_line(const RoboCompLidar3D::TData &ldata);
+    std::tuple<SpecificWorker::State, float,float> turn(const RoboCompLidar3D::TData &ldata);
+    std::tuple<SpecificWorker::State, float, float> follow_wall(const RoboCompLidar3D::TData &ldata);
+
 };
 
 #endif
