@@ -17,20 +17,13 @@
 *    along with RoboComp.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 /**
    \brief
    @author authorname
 */
 
-
-
-
-
-
 #ifndef SPECIFICWORKER_H
 #define SPECIFICWORKER_H
-
 
 #include <genericworker.h>
 #include <abstract_graphic_viewer/abstract_graphic_viewer.h>
@@ -44,11 +37,8 @@ public:
     SpecificWorker(TuplePrx tprx, bool startup_check);
     ~SpecificWorker();
     bool setParams(RoboCompCommonBehavior::ParameterList params);
-    const float MAX_SPEED = 1200.0;
-    const float DIST_COL = 1050.0;
-    const int DIST_PARED = 1000;
-    const int DELTA = 50;
-    const int SPIRAL_VELS = 400;
+    const int DIST_COL = 700;
+    float DIST_PARED = 2000.0;
 
 
 public slots:
@@ -56,31 +46,19 @@ public slots:
     int startup_check();
     void initialize(int period);
 
-
 private:
     bool startup_check_flag;
     AbstractGraphicViewer *viewer;
     void draw_lidar(const RoboCompLidar3D::TPoints &points, AbstractGraphicViewer *pViewer);
-
-
-    //State
     enum class State {IDLE, FOLLOW_WALL, STRAIGHT_LINE, SPIRAL, TURN};
     State state = State::IDLE;
 
-
-    std::tuple<State, float, float> tuple;
-
-
-    std::tuple<SpecificWorker::State, float, float> idle(const RoboCompLidar3D::TPoints &filtered_points);
-    std::tuple<SpecificWorker::State, float,float> straight_line(const RoboCompLidar3D::TPoints &filtered_points);
-    std::tuple<SpecificWorker::State, float,float> turn(const RoboCompLidar3D::TPoints &filtered_points);
-    std::tuple<SpecificWorker::State, float, float> follow_wall(const RoboCompLidar3D::TPoints &filtered_points);
-    std::tuple<SpecificWorker::State, float, float> spiral(const RoboCompLidar3D::TPoints &filtered_points);
+    void idle(const RoboCompLidar3D::TPoints &filtered_points);
+    void straight_line(const RoboCompLidar3D::TPoints &filtered_points);
+    void turn(const RoboCompLidar3D::TPoints &filtered_points);
+    void follow_wall(const RoboCompLidar3D::TPoints &filtered_points);
+    void spiral(const RoboCompLidar3D::TPoints &filtered_points);
 
 
 };
-
-
 #endif
-
-
