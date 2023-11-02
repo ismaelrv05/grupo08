@@ -50,8 +50,8 @@ private:
     bool startup_check_flag;
     AbstractGraphicViewer *viewer;
     void draw_lidar(const RoboCompLidar3D::TPoints &points, AbstractGraphicViewer *pViewer);
-    enum class State {IDLE, FOLLOW_WALL, STRAIGHT_LINE, SPIRAL, TURN};
-    State state = State::IDLE;
+    enum class State {FOLLOW_WALL, STRAIGHT_LINE, SPIRAL, TURN};
+    State state = State::SPIRAL;
 
     void idle(const RoboCompLidar3D::TPoints &filtered_points);
     void straight_line(const RoboCompLidar3D::TPoints &filtered_points);
