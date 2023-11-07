@@ -113,6 +113,11 @@ void SpecificWorker::draw_lidar(const RoboCompLidar3D::TPoints &points, Abstract
 
 void SpecificWorker::detectar_puertas(){
 
+    //Declarar un nuevo contenedor vacío, recorro el otro con un for, cogemos el punto del ángulo.
+    //Pasar a una estructura de datos con un punto por ángulo. El punto debe ser el mínimo punto es decir el que está más cerca del robot
+    // recorrer mientras theta sea menor que el anterior
+    //mientras sea el mismo ángulo quedarse con el mínimo.
+
 }
 /**************************************/
 // From the RoboCompLidar3D you can call this methods:
