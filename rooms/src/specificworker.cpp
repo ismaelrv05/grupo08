@@ -86,9 +86,10 @@ void SpecificWorker::compute()
         auto lines = extract_lines(filtered_points);
         auto peaks = extract_peaks(lines);
         auto doors = get_doors(peaks);
+        auto final_doors = filter_doors(doors);
 
         draw_lidar(lines.middle, viewer);
-        draw_doors(doors, viewer);
+        draw_doors(final_doors, viewer);
 
     }
     catch(const Ice::Exception &e)
@@ -97,6 +98,23 @@ void SpecificWorker::compute()
     }
 }
 
+SpecificWorker::Doors
+SpecificWorker:: filter_doors (const tuple<SpecificWorker::Doors, SpecificWorker::Doors, SpecificWorker::Doors &doors){
+    Doors final_doors;
+
+    auto &[dlow, dmiddle, dhigh]=doors;
+    for(const auto &dl:dlow){
+
+        bool equal_middle = std::ranges::find(dmiddle, dl) != dmiddle.end();
+        bool equal_high = std::ranges::find(dhigh, dl) != dhigh.end();
+
+        if(equal_middle and equal_high)
+            continue;
+        final_doors.push_back(dl);
+    }
+
+    return final_doors;
+}
 
 SpecificWorker::Lines SpecificWorker::extract_lines(const RoboCompLidar3D::TPoints &points)
 {
@@ -204,7 +222,7 @@ void SpecificWorker::draw_doors(const Doors &doors, AbstractGraphicViewer *pView
         QGraphicsLineItem *line = pViewer->scene.addLine(
                 door.right.x, door.right.y,
                 door.left.x, door.left.y,
-                QPen(QColor("red"), 15) // Puedes ajustar el color y grosor de la línea aquí
+                QPen(QColor("red"), 15)
         );
         door_items.push_back(line);
     }

@@ -190,10 +190,7 @@ void SpecificWorker::follow_wall(const RoboCompLidar3D::TPoints &filtered_points
         {
             DIST_PARED = DIST_PARED - 100.0;
             i = 0;
-            if(DIST_PARED <= 800)
-            {
-                state = State::STRAIGHT_LINE;
-            }
+            state = State::STRAIGHT_LINE;
         }
     }
     else
@@ -227,13 +224,6 @@ void SpecificWorker::spiral(const RoboCompLidar3D::TPoints &filtered_points)
     if (std::hypot(min_elem->x, min_elem->y) < DIST_COL)
     {
         omnirobot_proxy->setSpeedBase(0, 0, 3);
-    }
-
-    else {
-        omnirobot_proxy->setSpeedBase(2, 0, 3);
-        if (std::hypot(min_elem->x, min_elem->y) > 2300) {
-            state = State::FOLLOW_WALL;
-        }
     }
 }
 

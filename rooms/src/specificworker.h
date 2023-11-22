@@ -61,12 +61,29 @@ private:
     };
     struct Door
     {
-        RoboCompLidar3D::TPoint left, right;
+        RoboCompLidar3D::TPoint left, right, middle;
+        const float THRESHOLD = 500;
+        public:
+            Door(const RoboCompLidar3D::TPoint &left_,
+                 const RoboCompLidar3D::TPoint &right_) : left(left_), right(right_)
+            {
+                middle.x = (left.x-right.x)/2;
+                middle.y = (left.y-right.y)/2;
+            };
+            bool operator ==(const Door &d) const{
+               return std::hypot(d.middle.x - middle.x, d.middle.y - middle.y)< THRESHOLD;
+            };
+            Door& operator =(const Door &d){
+                left = d.left;
+                right = d.right;
+                middle = d.middle;
+                return *this;
+            }
     };
 
     using Doors = std::vector<Door>;
     void draw_lidar(const RoboCompLidar3D::TPoints &points, AbstractGraphicViewer *viewer);
-    void draw_doors(const Doors &doors, AbstractGraphicViewer *viewer);
+    std::tuple<SpecificWorker::Doors, SpecificWorker::Doors, SpecificWorker::Doors> draw_doors(const Doors &doors, AbstractGraphicViewer *viewer);
     Lines extract_lines(const RoboCompLidar3D::TPoints &points);
 
     SpecificWorker::Lines extract_peaks(const Lines &peaks);
