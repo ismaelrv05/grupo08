@@ -94,8 +94,20 @@ void SpecificWorker::compute()
             return;
         }
 
-        switch () {
-            //completar
+        switch (state) {
+            case States::SEARCH_DOORS:{
+                if(not doors.empty()){
+                    door_target = doors[0];
+                    move_robot(0,0,0);
+                    state = States::GOTO_DOOR;
+                }
+                else
+                    move_robot(0,0,0.5);
+            }
+
+            case States::GOTO_DOORS:{
+                auto res = std::ranges; 
+            }
         }
 
 
@@ -106,6 +118,12 @@ void SpecificWorker::compute()
     }
 }
 
+void SpecificWorker::move_robot(float side, float adv, float rot){
+    try{
+        omnirobot_proxy->setSpeedBase(side,adv,rot);
+    }
+    catch(const Ice::Exception  &e)
+}
 SpecificWorker::Doors
 SpecificWorker::doors_extractor(const RoboCompLidar3D::TPoints  &filtered_points)
 {
