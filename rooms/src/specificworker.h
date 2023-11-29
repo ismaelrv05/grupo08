@@ -30,6 +30,7 @@
 #include <genericworker.h>
 #include <abstract_graphic_viewer/abstract_graphic_viewer.h>
 #include <ranges>
+#include <tuple>
 
 class SpecificWorker : public GenericWorker
 {
@@ -46,15 +47,19 @@ public slots:
 
 private:
 
-    const float LOW_LOW = 300;
-    const float LOW_HIGH = 500;
-    const float MIDDLE_LOW = 600;
-    const float MIDDLE_HIGH = 800;
-    const float HIGH_LOW = 1200;
-    const float HIGH_HIGH = 1400;
+    const float LOW_LOW = 0;
+    const float LOW_HIGH = 400;
+    const float MIDDLE_LOW = 800;
+    const float MIDDLE_HIGH = 1200;
+    const float HIGH_LOW = 1600;
+    const float HIGH_HIGH = 2000;
 
     bool startup_check_flag;
     AbstractGraphicViewer *viewer;
+
+    const float MAX_ADV_SPEED = 700;
+    const float DOOR_PROXIMITY_THRESHOLD = 800; //distancia a la que se para de la puerta
+
     struct Lines
     {
         RoboCompLidar3D::TPoints low, middle, high;
@@ -63,7 +68,7 @@ private:
     struct Door
     {
         RoboCompLidar3D::TPoint left, right, middle;
-        const float THRESHOLD = 500;
+        const float THRESHOLD = 500; //door equality
         Door(){ left = right = middle = RoboCompLidar3D::TPoint(0,0,0);};
         Door(const RoboCompLidar3D::TPoint &left_,
              const RoboCompLidar3D::TPoint &right_) : left(left_), right(right_)
@@ -82,24 +87,40 @@ private:
             middle = d.middle;
             return *this;
         };
+        void print()
+        {
+            qInfo() << "Door:";
+            qInfo() << "    left:" << left.x << left.y;
+            qInfo() << "    right:" << right.x << right.y;
+        };
+        float dist_to_robot() const
+        { return std::hypot(middle.x, middle.y);}
+        float angle_to_robot() const
+        { return atan2(middle.x, middle.y);}
     };
 
     using Doors = std::vector<Door>;
 
     void draw_lidar(const RoboCompLidar3D::TPoints &points, AbstractGraphicViewer *viewer);
     Lines extract_lines(const RoboCompLidar3D::TPoints &points);
-
     SpecificWorker::Lines extract_peaks(const Lines &peaks);
     void draw_doors(const Doors &doors, AbstractGraphicViewer *viewer, QColor = QColor("red"));
-
     std::tuple<Doors, Doors, Doors>
     get_doors(const Lines &lines);
-
     Doors filter_doors(const std::tuple<Doors, Doors, Doors> &doors);
     Doors doors_extractor(const RoboCompLidar3D::TPoints &filtered_points);
 
     // states
     Door door_target;
+    enum class States{ IDLE, SEARCH_DOOR, GOTO_DOOR, GO_THROUGH};
+    States state = States::SEARCH_DOOR;
+
+
+    void move_robot(float side, float adv, float rot);
+
+    float break_adv(float dist_to_target);
+
+    float break_rot(float rot);
 };
 
 
