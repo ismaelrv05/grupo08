@@ -100,19 +100,24 @@ private:
     };
 
     using Doors = std::vector<Door>;
+    using Peaks_list = std::vector<std::vector<int>>;
 
     void draw_lidar(const RoboCompLidar3D::TPoints &points, AbstractGraphicViewer *viewer);
-    Lines extract_lines(const RoboCompLidar3D::TPoints &points);
+
+    void match_door_target(const Doors &doors, const Door &target);
+
+    Lines extract_lines(const RoboCompLidar3D::TPoints &points, const std::vector<std::pair<float, float>> &ranges);
     SpecificWorker::Lines extract_peaks(const Lines &peaks);
-    void draw_doors(const Doors &doors, AbstractGraphicViewer *viewer, QColor = QColor("red"));
+    void draw_doors(const Doors &doors, QGraphicsScene *scene, QColor = QColor("red"));
+    void draw_lines(const Lines &lines, AbstractGraphicViewer *pViewer);
     std::tuple<Doors, Doors, Doors>
     get_doors(const Lines &lines);
     Doors filter_doors(const std::tuple<Doors, Doors, Doors> &doors);
-    Doors doors_extractor(const RoboCompLidar3D::TPoints &filtered_points);
+    Doors doors_extractor(const Lines &lines, QGraphicsScene *scene);
 
     // states
     Door door_target;
-    enum class States{ IDLE, SEARCH_DOOR, GOTO_DOOR, GO_THROUGH};
+    enum class States{ IDLE, SEARCH_DOOR, GOTO_DOOR, GO_THROUGH, ALING};
     States state = States::SEARCH_DOOR;
 
 
