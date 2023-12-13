@@ -85,7 +85,7 @@ void SpecificWorker::compute()
 
     std::vector<std::pair<float, float>> ranges_list = {{1000, 2500}};
     auto lines = extract_lines(points, ranges_list);
-    auto doors = doors_extractor(lines, &viewer->scene);
+    auto doors = door_detector.detect(lines, &viewer->scene);
 
     match_door_target(doors, door_target);
 
@@ -156,24 +156,7 @@ void SpecificWorker::state_machine(const Doors &doors)
         }
         case States::GO_THROUGH:
         {
-            auto now = std::chrono::steady_clock::now();
-
-            // Check if the state just started
-            if (!goThroughStartTime.time_since_epoch().count())
-                goThroughStartTime = now;
-
-            // Check if 5000 ms have passed
-            if (std::chrono::duration_cast<std::chrono::milliseconds>(now - goThroughStartTime) < std::chrono::milliseconds(6000))
-            {
-                // Less than 5 seconds have passed, continue moving the robot
-                move_robot(0, 1.0, 0);
-            }
-            else
-            {
-                // 5 seconds have passed, reset the timer and change state
-                goThroughStartTime = std::chrono::steady_clock::time_point();  // Reset timer
-                state = States::SEARCH_DOOR; // Transition to the next state
-            }
+            move_robot(0,0.5,0);
             break;
         }
     }
@@ -194,10 +177,10 @@ void SpecificWorker::match_door_target(const Doors &doors, const Door &target)
     }
 }
 
-float SpecificWorker::break_adv(float dist_to_target)
-{
-    return std::clamp(dist_to_target/DOOR_PROXIMITY_THRESHOLD, 0.f, 1.f );
-}
+//float SpecificWorker::break_adv(float dist_to_target)
+//{
+//    return std::clamp(dist_to_target/DOOR_PROXIMITY_THRESHOLD, 0.f, 1.f );
+//}
 float SpecificWorker::break_rot(float rot)
 {
     if(rot>=0)
@@ -229,10 +212,10 @@ float SpecificWorker::break_adv(float dist_to_target)
 {
     return std::clamp(dist_to_target / consts.DOOR_PROXIMITY_THRESHOLD, 0.f, 1.f );
 }
-float SpecificWorker::break_rot(float rot)
-{
-    return rot>=0 ? std::clamp(1-rot, 0.f, 1.f) : std::clamp(rot+1, 0.f, 1.f);
-}
+//float SpecificWorker::break_rot(float rot)
+//{
+//    return rot>=0 ? std::clamp(1-rot, 0.f, 1.f) : std::clamp(rot+1, 0.f, 1.f);
+//}
 
 int SpecificWorker::startup_check()
 {
