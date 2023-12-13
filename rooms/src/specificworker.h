@@ -22,8 +22,6 @@
 	@author authorname
 */
 
-
-
 #ifndef SPECIFICWORKER_H
 #define SPECIFICWORKER_H
 
@@ -31,6 +29,8 @@
 #include <abstract_graphic_viewer/abstract_graphic_viewer.h>
 #include <ranges>
 #include <tuple>
+#include "door_detector.h"
+#include <Eigen/Dense>
 
 class SpecificWorker : public GenericWorker
 {
@@ -46,87 +46,44 @@ public slots:
     void initialize(int period);
 
 private:
-
-    const float LOW_LOW = 0;
-    const float LOW_HIGH = 400;
-    const float MIDDLE_LOW = 800;
-    const float MIDDLE_HIGH = 1200;
-    const float HIGH_LOW = 1600;
-    const float HIGH_HIGH = 2000;
-
     bool startup_check_flag;
     AbstractGraphicViewer *viewer;
 
-    const float MAX_ADV_SPEED = 700;
-    const float DOOR_PROXIMITY_THRESHOLD = 800; //distancia a la que se para de la puerta
-
-    struct Lines
+    struct Constants
     {
-        RoboCompLidar3D::TPoints low, middle, high;
+        std::string lidar_name = "helios";
+        const float MAX_ADV_SPEED = 700;
+        const float DOOR_PROXIMITY_THRESHOLD = 200;
+        std::vector<std::pair<float, float>> ranges_list = {{1000, 2500}};
     };
+    Constants consts;
 
-    struct Door
-    {
-        RoboCompLidar3D::TPoint left, right, middle;
-        const float THRESHOLD = 500; //door equality
-        Door(){ left = right = middle = RoboCompLidar3D::TPoint(0,0,0);};
-        Door(const RoboCompLidar3D::TPoint &left_,
-             const RoboCompLidar3D::TPoint &right_) : left(left_), right(right_)
-        {
-            middle.x = (left.x + right.x)/2;
-            middle.y = (left.y + right.y)/2;
-        };
-        bool operator==(const Door &d) const
-        {
-            return std::hypot(d.middle.x - middle.x, d.middle.y - middle.y) < THRESHOLD;
-        };
-        Door& operator=(const Door &d)
-        {
-            left = d.left;
-            right = d.right;
-            middle = d.middle;
-            return *this;
-        };
-        void print()
-        {
-            qInfo() << "Door:";
-            qInfo() << "    left:" << left.x << left.y;
-            qInfo() << "    right:" << right.x << right.y;
-        };
-        float dist_to_robot() const
-        { return std::hypot(middle.x, middle.y);}
-        float angle_to_robot() const
-        { return atan2(middle.x, middle.y);}
-    };
-
+    using Door = DoorDetector::Door;
     using Doors = std::vector<Door>;
-    using Peaks_list = std::vector<std::vector<int>>;
+    using Line = std::vector<Eigen::Vector2f>;
+    using Lines = std::vector<Line>;
 
-    void draw_lidar(const RoboCompLidar3D::TPoints &points, AbstractGraphicViewer *viewer);
-
+    // Doors
+    DoorDetector door_detector;
+    std::vector<Line> extract_lines(const RoboCompLidar3D::TPoints &points, const vector<std::pair<float, float>> &ranges);
     void match_door_target(const Doors &doors, const Door &target);
 
-    Lines extract_lines(const RoboCompLidar3D::TPoints &points, const std::vector<std::pair<float, float>> &ranges);
-    SpecificWorker::Lines extract_peaks(const Lines &peaks);
-    void draw_doors(const Doors &doors, QGraphicsScene *scene, QColor = QColor("red"));
+    // Draw
+    void draw_lidar(const RoboCompLidar3D::TPoints &points, AbstractGraphicViewer *viewer);
+    void draw_target_door(const Door &target, AbstractGraphicViewer *viewer, QColor color="magenta", QColor color_far="orange");
     void draw_lines(const Lines &lines, AbstractGraphicViewer *pViewer);
-    std::tuple<Doors, Doors, Doors>
-    get_doors(const Lines &lines);
-    Doors filter_doors(const std::tuple<Doors, Doors, Doors> &doors);
-    Doors doors_extractor(const Lines &lines, QGraphicsScene *scene);
 
     // states
     Door door_target;
-    enum class States{ IDLE, SEARCH_DOOR, GOTO_DOOR, GO_THROUGH, ALING};
+    enum class States{ IDLE, SEARCH_DOOR, GOTO_DOOR, GO_THROUGH, ALIGN};
     States state = States::SEARCH_DOOR;
+    void state_machine(const Doors &doors);
 
-
+    // robot
     void move_robot(float side, float adv, float rot);
-
     float break_adv(float dist_to_target);
-
     float break_rot(float rot);
+
+
 };
-
-
 #endif
