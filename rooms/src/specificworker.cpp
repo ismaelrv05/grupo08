@@ -110,16 +110,24 @@ void SpecificWorker::state_machine(const Doors &doors)
         case States::SEARCH_DOOR:
         {
             //qInfo() << "SEARCH_DOOR";
-            if(not doors.empty())
+            if(!doors.empty())
             {
-                door_target = doors[0];
+                Door closest_door = doors[0];
+                for (const auto& door : doors)
+                {
+                    if (fabs(door.angle_to_robot()) < fabs(closest_door.angle_to_robot()))
+                    {
+                        closest_door = door;
+                    }
+                }
+                door_target = closest_door;
                 move_robot(0,0,0);
                 state = States::GOTO_DOOR;
-                qInfo() << "First found";
+                qInfo() << "Door with smallest angle found";
                 door_target.print();
             }
             else
-                move_robot(0,0,0.5);
+                move_robot(0,0,0.3);
             break;
         }
         case States::GOTO_DOOR:
@@ -128,9 +136,12 @@ void SpecificWorker::state_machine(const Doors &doors)
             //qInfo() << "distance " << door_target.dist_to_robot();
             if(door_target.perp_dist_to_robot() < consts.DOOR_PROXIMITY_THRESHOLD)
             {
-                move_robot(0,0,0);
+                move_robot(1,0, 0);
                 qInfo() << "GOTO_DOOR Target achieved";
                 state = States::ALIGN;
+                graph.addNode();
+                graph.addEdge(graph.getCurrentNode(), graph.getCurrentNode()-1);
+                graph.print();
             }
             else    // do what you have to do and stay in this state
             {
@@ -143,24 +154,43 @@ void SpecificWorker::state_machine(const Doors &doors)
         }
         case States::ALIGN:
         {
-            if( fabs(door_target.angle_to_robot()) < 0.01)
+            if( fabs(door_target.angle_to_robot()) < 0.02)
             {
                 move_robot(0,0,0);
                 state = States::GO_THROUGH;
                 return;
             }
             //qInfo() << door_target.angle_to_robot();
-            float rot = -0.4 * door_target.angle_to_robot();
+            float rot = -0. * door_target.angle_to_robot();
             move_robot(0,0,rot);
             break;
         }
         case States::GO_THROUGH:
         {
-            move_robot(0,0.5,0);
+            auto now = std::chrono::steady_clock::now();
+
+            // Check if the state just started
+            if (!Timer.time_since_epoch().count())
+                Timer = now;
+
+            // Check if 5000 ms have passed
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(now - Timer) < std::chrono::milliseconds(10000))
+            {
+                // Less than 5 seconds have passed, continue moving the robot
+                move_robot(0, 1.0, 0);
+            }
+            else
+            {
+                // 5 seconds have passed, reset the timer and change state
+                Timer = std::chrono::steady_clock::time_point();  // Reset timer
+                state = States::SEARCH_DOOR; // Transition to the next state
+            }
             break;
         }
+
     }
 }
+
 
 void SpecificWorker::match_door_target(const Doors &doors, const Door &target)
 {
@@ -181,14 +211,6 @@ void SpecificWorker::match_door_target(const Doors &doors, const Door &target)
 //{
 //    return std::clamp(dist_to_target/DOOR_PROXIMITY_THRESHOLD, 0.f, 1.f );
 //}
-float SpecificWorker::break_rot(float rot)
-{
-    if(rot>=0)
-        return std::clamp(1-rot, 0.f, 1.f);
-    else
-        return std::clamp(rot+1, 0.f, 1.f);
-}
-
 
 void SpecificWorker::move_robot(float side, float adv, float rot)
 {
@@ -212,10 +234,10 @@ float SpecificWorker::break_adv(float dist_to_target)
 {
     return std::clamp(dist_to_target / consts.DOOR_PROXIMITY_THRESHOLD, 0.f, 1.f );
 }
-//float SpecificWorker::break_rot(float rot)
-//{
-//    return rot>=0 ? std::clamp(1-rot, 0.f, 1.f) : std::clamp(rot+1, 0.f, 1.f);
-//}
+float SpecificWorker::break_rot(float rot)
+{
+    return rot>=0 ? std::clamp(1-rot, 0.f, 1.f) : std::clamp(rot+1, 0.f, 1.f);
+}
 
 int SpecificWorker::startup_check()
 {

@@ -31,6 +31,7 @@
 #include <tuple>
 #include "door_detector.h"
 #include <Eigen/Dense>
+#include "graph.h"
 
 class SpecificWorker : public GenericWorker
 {
@@ -48,6 +49,7 @@ public slots:
 private:
     bool startup_check_flag;
     AbstractGraphicViewer *viewer;
+    std::chrono::steady_clock::time_point Timer;
 
     struct Constants
     {
@@ -83,6 +85,9 @@ private:
     void move_robot(float side, float adv, float rot);
     float break_adv(float dist_to_target);
     float break_rot(float rot);
+
+    // graph
+    Graph graph;
 
 
 };
