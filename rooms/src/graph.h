@@ -14,14 +14,13 @@ class Graph
     using Edges = std::vector<std::pair<int,int>>;
     Nodes nodes;
     Edges edges;
-    int currentNode = 0;
+
 
 public:
     Graph();
     int addNode();
     int addEdge(int n1, int n2);
-    void drawGraph(AbstractGraphicViewer *viewer);
-    int getCurrentNode();
+    int num_nodes() const;
     void print();
 };
 

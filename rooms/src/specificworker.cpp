@@ -100,6 +100,8 @@ void SpecificWorker::compute()
 
 void SpecificWorker::state_machine(const Doors &doors)
 {
+    static int countNodes=0;
+
     switch (state)
     {
         case States::IDLE:
@@ -134,14 +136,17 @@ void SpecificWorker::state_machine(const Doors &doors)
         {
             //Info() << "GOTO_DOOR";
             //qInfo() << "distance " << door_target.dist_to_robot();
+            qInfo() << "The graph is: ";
+            graph.print();
+
+            if (graph.num_nodes() >=4){
+                std::cout << "Actual room: " << countNodes << std::endl;
+            }
             if(door_target.perp_dist_to_robot() < consts.DOOR_PROXIMITY_THRESHOLD)
             {
                 move_robot(1,0, 0);
                 qInfo() << "GOTO_DOOR Target achieved";
                 state = States::ALIGN;
-                graph.addNode();
-                graph.addEdge(graph.getCurrentNode(), graph.getCurrentNode()-1);
-                graph.print();
             }
             else    // do what you have to do and stay in this state
             {
@@ -183,6 +188,18 @@ void SpecificWorker::state_machine(const Doors &doors)
             {
                 // 5 seconds have passed, reset the timer and change state
                 Timer = std::chrono::steady_clock::time_point();  // Reset timer
+
+                if(graph.num_nodes()<=3){
+                    int addNode = graph.addNode();
+                    graph.addEdge(addNode-1, addNode);
+                }
+                else{
+                    countNodes++;
+                    if (countNodes == 4){
+                        countNodes=0;
+                    }
+
+                }
                 state = States::SEARCH_DOOR; // Transition to the next state
             }
             break;
@@ -206,11 +223,6 @@ void SpecificWorker::match_door_target(const Doors &doors, const Door &target)
         qInfo() << "GOTO_DOOR Door lost, searching";
     }
 }
-
-//float SpecificWorker::break_adv(float dist_to_target)
-//{
-//    return std::clamp(dist_to_target/DOOR_PROXIMITY_THRESHOLD, 0.f, 1.f );
-//}
 
 void SpecificWorker::move_robot(float side, float adv, float rot)
 {
