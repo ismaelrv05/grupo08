@@ -27,10 +27,6 @@
 SpecificWorker::SpecificWorker(TuplePrx tprx, bool startup_check) : GenericWorker(tprx)
 {
     this->startup_check_flag = startup_check;
-    // Uncomment if there's too many debug messages
-    // but it removes the possibility to see the messages
-    // shown in the console with qDebug()
-//  QLoggingCategory::setFilterRules("*.debug=false\n");
 }
 /**
 * \brief Default destructor
@@ -42,15 +38,6 @@ SpecificWorker::~SpecificWorker()
 
 bool SpecificWorker::setParams(RoboCompCommonBehavior::ParameterList params)
 {
-//  THE FOLLOWING IS JUST AN EXAMPLE
-//  To use innerModelPath parameter you should uncomment specificmonitor.cpp readConfig method content
-//  try
-//  {
-//     RoboCompCommonBehavior::Parameter par = params.at("InnerModelPath");
-//     std::string innermodel_path = par.value;
-//     innerModel = std::make_shared(innermodel_path);
-//  }
-//  catch(const std::exception &e) { qFatal("Error reading config params"); }
     return true;
 }
 
@@ -139,9 +126,9 @@ void SpecificWorker::state_machine(const Doors &doors)
             qInfo() << "The graph is: ";
             graph.print();
 
-            if (graph.num_nodes() >=4){
-                std::cout << "Actual room: " << countNodes << std::endl;
-            }
+
+            std::cout << "Actual room: " << countNodes << std::endl;
+
             if(door_target.perp_dist_to_robot() < consts.DOOR_PROXIMITY_THRESHOLD)
             {
                 move_robot(1,0, 0);
@@ -159,14 +146,15 @@ void SpecificWorker::state_machine(const Doors &doors)
         }
         case States::ALIGN:
         {
-            if( fabs(door_target.angle_to_robot()) < 0.02)
+            if(fabs(door_target.angle_to_robot()) < 0.01)
             {
                 move_robot(0,0,0);
                 state = States::GO_THROUGH;
+
                 return;
             }
             //qInfo() << door_target.angle_to_robot();
-            float rot = -0. * door_target.angle_to_robot();
+            float rot = -0.5 * door_target.angle_to_robot();
             move_robot(0,0,rot);
             break;
         }
@@ -270,7 +258,7 @@ void SpecificWorker::draw_lidar(const RoboCompLidar3D::TPoints &points, Abstract
     for(const auto &p : points)
     {
         auto point = viewer->scene.addRect(-50,-50,100, 100,
-                                           QPen(QColor("lightblue")), QBrush(QColor("lightblue")));
+                                           QPen(QColor("green")), QBrush(QColor("green")));
         point->setPos(p.x, p.y);
         borrar.push_back(point);
     }
