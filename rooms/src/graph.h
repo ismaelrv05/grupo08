@@ -1,7 +1,3 @@
-//
-// Created by usuario on 13/12/23.
-//
-
 #ifndef CHOCACHOCA_GRAPH_H
 #define CHOCACHOCA_GRAPH_H
 
