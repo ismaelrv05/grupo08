@@ -1,7 +1,3 @@
-//
-// Created by usuario on 13/12/23.
-//
-
 #include "graph.h"
 #include <ranges>
 
